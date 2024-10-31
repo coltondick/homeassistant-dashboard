@@ -1,0 +1,656 @@
+# STOP! BACK UP YOUR SYSTEM FIRST!
+# Before you proceed, make a backup of your system! It’s easy to make a mistake here—most of us do during our first attempts. Even after the 27th try, you’ll still appreciate having a backup, especially after pulling an all-nighter on configuration. So, if this is one of your first times editing config.yaml, save yourself the hassle: **make a backup now.**
+
+# STEP 1: BACK UP YOUR CONFIGURATION FILE
+# Make a copy of your configuration.yaml file and save it separately (a notepad file on your desktop works well).
+# You’ll likely need this copy if something goes wrong, and it will save you from hours—or even days—of redoing previous work.
+
+# IMPORTANT CHECK: REQUIREMENTS
+# Before adding new code to config.yaml, verify that all required resources are installed.
+# Review the instructions for this dashboard to ensure you’ve completed the necessary HACS and Home Assistant integrations.
+# Missing any component could prevent your system from restarting correctly.
+
+# KNOWLEDGE REQUIREMENT
+# Familiarity with Home Assistant is crucial for editing config.yaml. If you’re not familiar with Helpers or Scripts,
+# it’s better to wait until you’re comfortable with Home Assistant’s basic operations.
+
+# CONFIGURATION INSTRUCTIONS:
+# Add the following to your configuration.yaml file, depending on which elements of the dashboard you want.
+# If you’re not sure, you can cross-reference each sensor or template name here with the main dashboard YAML file in this package.
+# The main YAML file contains all dashboard functions; use this template to customize which ones you want for your setup.
+
+# Example: This file includes various display settings, like showing temperature with a degree symbol or rounding decimal values.
+# The News Ticker configuration is also here, so if you don’t want it, skip that section.
+
+# FINAL CHECK: VERIFY YOUR WORK
+# After adding your desired code, go to the Developer tab and click “Check Configuration.” 
+# If there’s an issue and you can’t restart, refer to the backup of your configuration.yaml you made in STEP 1.
+# Simply delete the new changes and paste the old code to restore your previous setup. After doing so, run “Check Configuration” again to ensure everything is in order.
+
+# Good luck, and remember: patience and backups are key!
+
+
+# Loads default set of integrations. Do not remove.
+default_config:
+
+# Text to speech
+tts:
+  - platform: google_translate
+
+bluetooth:
+
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+#themes: !include themes.yaml
+
+
+frontend:
+  extra_module_url:
+    - /hacsfiles/lovelace-card-mod/card-mod.js?hacstag=190927524322
+    - /local/custom_lovelace/html_card/html-card.js
+
+homeassistant:
+  internal_url: *INTERNAL URL*
+  external_url: *INSERT YOUR OWN NABU CASA LINK*
+  customize: !include customize.yaml
+  allowlist_external_dirs:
+    - "/config/www/lovelace"
+    - "/config/www/temp"
+    - "/config/www/tmp"
+    - "/media"
+
+  media_dirs:
+    local: /media
+
+
+  - platform: template
+    sensors:
+      last_automation_triggered:
+        friendly_name: "Last Automation Triggered"
+        value_template: >
+          {% set last_triggered = state_attr('automation.cat_litter_timer_button', 'last_triggered') %}
+          {% if last_triggered %}
+            {% set days_ago = ((as_timestamp(now()) - as_timestamp(last_triggered)) // 86400) | int %}
+            {{ days_ago }} days<br>{{ as_timestamp(last_triggered) | timestamp_custom('%H:%M:%S') }}
+          {% else %}
+            Never
+          {% endif %}
+
+  - platform: template
+    sensors:
+      last_automation_triggered2:
+        friendly_name: "Last Automation Triggered2"
+        value_template: >
+          {% set last_triggered = state_attr('automation.cat_litter_timer_button', 'last_triggered') %}
+          {% if last_triggered %}
+            {% set hours_ago = (as_timestamp(now()) - as_timestamp(last_triggered)) / 3600 %}
+            {% set day_of_week = as_timestamp(last_triggered) | timestamp_custom('%a') %}
+            {% if hours_ago >= 96 %}
+              <span class="blink-red">
+                {{ day_of_week }} - {{ as_timestamp(last_triggered) | timestamp_custom('%-I:%M%p') }}<br>{{ hours_ago | int }} hours ago
+              </span>
+            {% else %}
+              {{ day_of_week }} - {{ as_timestamp(last_triggered) | timestamp_custom('%-I:%M%p') }}<br>{{ hours_ago | int }} hours ago
+            {% endif %}
+          {% else %}
+            Never
+          {% endif %}
+
+  - platform: template
+    sensors:
+      water_level_no_unit:
+        friendly_name: "Water Level No Unit"
+        value_template: >
+          {% set value = states('sensor.water_level') %}
+          {% set number = value.split(' ')[0] %}
+          {% if number == 'High' %}
+            Not Empty\nEmpty
+          {% else %}
+            {{ number.capitalize() }}
+          {% endif %}
+        attribute_templates:
+          blink: >
+            {% if number == 'Low' %}
+              true
+            {% else %}
+              false
+            {% endif %}
+
+  - platform: template
+    sensors:
+      meds_timer_status:
+        value_template: >
+          {% if states('timer.meds_timer') == '0' %}
+            red
+          {% elif states('timer.meds_timer') | int < 3600 %}
+            yellow
+          {% else %}
+            normal
+          {% endif %}
+
+
+  - platform: rest
+    resource: https://www.theweathernetwork.com/api/data/caon0696
+    name: weather_network
+    json_attributes:
+      - obs
+      - swo
+    value_template: "OK"
+    scan_interval:
+      minutes: 15
+
+  - platform: template
+    sensors:
+      weather_network_pollen_index:
+        value_template: '{{ states.sensor.weather_network.attributes["obs"]["pollen_index"] }}'
+        friendly_name: "Pollen Index (Weather Network)"
+      weather_network_pollen_name:
+        value_template: '{{ states.sensor.weather_network.attributes["obs"]["pollen_name"] }}'
+        friendly_name: "Pollen Risk Type (Weather Network)"
+      weather_network_uv_index:
+        value_template: '{{ states.sensor.weather_network.attributes["obs"]["uv_label"] }}'
+        friendly_name: "UV Index (Weather Network)"
+      weather_network_air_quality:
+        value_template: '{{ states.sensor.weather_network.attributes["obs"]["aq_level"] }}'
+        friendly_name: "Air Quality (Weather Network)"
+      weather_network_temperature:
+        value_template: '{{ states.sensor.weather_network.attributes["obs"]["t"] }}'
+        friendly_name: "Temperature (Weather Network) (Weather Network)"
+        device_class: temperature
+        unit_of_measurement: "°C"
+      weather_network_swo_level:
+        value_template: '{{ states.sensor.weather_network.attributes["swo"]["swo_level"] }}'
+        friendly_name: "Severe Weather Risk Level (Weather Network)"
+      weather_network_swo_type:
+        value_template: '{{ states.sensor.weather_network.attributes["swo"]["swo_type"] }}'
+        friendly_name: "Severe Weather Risk Type (Weather Network)"
+
+  - platform: feedparser
+    name: Google News
+    feed_url: https://www.google.ca/alerts/feeds/00028625660956993271/15040452229692133315
+    date_format: "%a, %d %b %Y %H:%M:%S %Z"
+    scan_interval:
+      minutes: 15
+    inclusions:
+      - title
+      - link
+      - description
+      - content
+    exclusions:
+
+  - platform: feedparser
+    name: CTV News Politics
+    feed_url: https://www.ctvnews.ca/rss/ctvnews-ca-politics-public-rss-1.822302
+    date_format: "%a, %d %b %Y %H:%M:%S %Z"
+    scan_interval:
+      minutes: 15
+    inclusions:
+      - title
+      - content
+      - description
+    exclusions:
+
+  - platform: feedparser
+    name: CTV News Top Stories
+    feed_url: https://www.ctvnews.ca/rss/ctvnews-ca-top-stories-public-rss-1.822009
+    date_format: "%a, %d %b %Y %H:%M:%S %Z"
+    scan_interval:
+      minutes: 15
+    inclusions:
+      - title
+      - content
+      - description
+    exclusions:
+
+  - platform: feedparser
+    name: CTV News Toronto
+    feed_url: https://toronto.ctvnews.ca/rss/ctv-news-toronto-1.822319
+    date_format: "%a, %d %b %Y %H:%M:%S %Z"
+    scan_interval:
+      minutes: 15
+    inclusions:
+      - title
+      - content
+      - description
+    exclusions:
+
+  - platform: feedparser
+    name: CNN News
+    feed_url: https://www.google.ca/alerts/feeds/03887704524064700626/11442725197465208985
+    date_format: "%a, %d %b %Y %H:%M:%S %Z"
+    scan_interval:
+      minutes: 15
+    inclusions:
+      - title
+      - content
+      - description
+    exclusions:
+
+  - platform: feedparser
+    name: Google News
+    feed_url: ttps://www.google.ca/alerts/feeds/03887704524064700626/2375914619997562293
+    date_format: "%a, %d %b %Y %H:%M:%S %Z"
+    scan_interval:
+      minutes: 15
+    inclusions:
+      - title
+      - content
+      - description
+    exclusions:
+
+  - platform: feedparser
+    name: CBS News Politics
+    feed_url: https://www.cbsnews.com/latest/rss/politics
+    date_format: "%a, %d %b %Y %H:%M:%S %Z"
+    scan_interval:
+      minutes: 15
+    inclusions:
+      - title
+      - content
+      - description
+    exclusions:
+
+  - platform: feedparser
+    name: CBS News Top Stories
+    feed_url: https://www.cbsnews.com/latest/rss/main
+    date_format: "%a, %d %b %Y %H:%M:%S %Z"
+    scan_interval:
+      minutes: 15
+    inclusions:
+      - title
+      - content
+      - description
+    exclusions:
+
+  - platform: feedparser
+    name: Global News Headlines
+    feed_url: https://globalnews.ca/feed/
+    date_format: "%a, %d %b %Y %H:%M:%S %Z"
+    scan_interval:
+      minutes: 15
+    inclusions:
+      - title
+      - content
+      - description
+    exclusions:
+
+  - platform: feedparser
+    name: Global News Toronto
+    feed_url: https://globalnews.ca/toronto/feed/
+    date_format: "%a, %d %b %Y %H:%M:%S %Z"
+    scan_interval:
+      minutes: 15
+    inclusions:
+      - title
+      - content
+      - description
+    exclusions:
+
+  - platform: feedparser
+    name: Global News Politics
+    feed_url: https://globalnews.ca/politics/feed/
+    date_format: "%a, %d %b %Y %H:%M:%S %Z"
+    scan_interval:
+      minutes: 15
+    inclusions:
+      - title
+      - content
+      - description
+    exclusions:
+
+  - platform: feedparser
+    name: To Do
+    feed_url: home_assistant_ideas_account1_attributes
+    date_format: "%a, %d %b %Y %H:%M:%S %Z"
+    scan_interval:
+      minutes: 5
+    inclusions:
+      - subject
+    exclusions:
+
+  - platform: template
+    sensors:
+      stopwatch:
+        friendly_name: "Stopwatch"
+        value_template: >
+          {% if is_state('input_boolean.reset_stopwatch', 'on') %}
+            00:00:00
+          {% elif is_state('input_boolean.start_stopwatch', 'off') %}
+            {{ states('sensor.stopwatch') }}
+          {% else %}
+            {% set start_time = states('input_datetime.stopwatch_start_time') %}
+            {% if start_time != 'unknown' %}
+              {% set elapsed = as_timestamp(now()) - as_timestamp(start_time) %}
+              {{ (elapsed | timestamp_custom('%H:%M:%S', false)) }}
+            {% else %}
+              00:00:00
+            {% endif %}
+          {% endif %}
+
+  - platform: template
+    sensors:
+      google_news_attributes:
+        friendly_name: "Google News Content"
+        value_template: >
+          {{ states.sensor.google_news.attributes.entries[0].title }}
+
+  - platform: template
+    sensors:
+      google_news_attributes_2:
+        friendly_name: "Google News Content 2"
+        value_template: >
+          {{ states.sensor.google_news.attributes.entries[1].title }}
+
+  - platform: template
+    sensors:
+      google_news_attributes_3:
+        friendly_name: "Google News Content 3"
+        value_template: >
+          {{ states.sensor.google_news.attributes.entries[2].title }}
+
+  - platform: template
+    sensors:
+      google_news_attributes_4:
+        friendly_name: "Google News Content 4"
+        value_template: >
+          {{ states.sensor.google_news.attributes.entries[3].title }}
+
+  - platform: template
+    sensors:
+      ctv_news_politics_attributes_0:
+        friendly_name: "CTV News Politics Content"
+        value_template: >
+          {{ states.sensor.ctv_news_politics.attributes.entries[0].title }}
+
+  - platform: template
+    sensors:
+      ctv_news_politics_attributes_1:
+        friendly_name: "CTV News Politics Content 1"
+        value_template: >
+          {{ states.sensor.ctv_news_politics.attributes.entries[1].title }}
+
+  - platform: template
+    sensors:
+      ctv_news_politics_attributes_2:
+        friendly_name: "CTV News Politics Content 2"
+        value_template: >
+          {{ states.sensor.ctv_news_politics.attributes.entries[2].title }}
+
+  - platform: template
+    sensors:
+      ctv_news_top_stories_attributes_0:
+        friendly_name: "CTV News Top Stories Content"
+        value_template: >
+          {{ states.sensor.ctv_news_top_stories.attributes.entries[0].title }}
+
+  - platform: template
+    sensors:
+      ctv_news_top_stories_attributes_1:
+        friendly_name: "CTV News Top Stories Content 1"
+        value_template: >
+          {{ states.sensor.ctv_news_top_stories.attributes.entries[1].title }}
+
+  - platform: template
+    sensors:
+      ctv_news_top_stories_attributes_2:
+        friendly_name: "CTV News Top Stories Content 2"
+        value_template: >
+          {{ states.sensor.ctv_news_top_stories.attributes.entries[2].title }}
+
+  - platform: template
+    sensors:
+      ctv_news_toronto_attributes_0:
+        friendly_name: "CTV News Toronto Content"
+        value_template: >
+          {{ states.sensor.ctv_news_toronto.attributes.entries[0].title }}
+
+  - platform: template
+    sensors:
+      ctv_news_toronto_attributes_1:
+        friendly_name: "CTV News Toronto Content 1"
+        value_template: >
+          {{ states.sensor.ctv_news_toronto.attributes.entries[1].title }}
+
+  - platform: template
+    sensors:
+      cbs_news_politics_attributes_0:
+        friendly_name: "CBS News Politics Content"
+        value_template: >
+          {{ states.sensor.cbs_news_politics.attributes.entries[0].title }}
+
+  - platform: template
+    sensors:
+      cbs_news_politics_attributes_1:
+        friendly_name: "CBS News Politics Content 1"
+        value_template: >
+          {{ states.sensor.cbs_news_politics.attributes.entries[1].title }}
+
+  - platform: template
+    sensors:
+      cbs_news_top_stories_attributes_0:
+        friendly_name: "CBS News Top Stories Content"
+        value_template: >
+          {{ states.sensor.cbs_news_top_stories.attributes.entries[0].title }}
+
+  - platform: template
+    sensors:
+      cbs_news_top_stories_attributes_1:
+        friendly_name: "CBS News Top Stories Content 1"
+        value_template: >
+          {{ states.sensor.cbs_news_top_stories.attributes.entries[1].title }}
+
+  - platform: template
+    sensors:
+      global_news_headlines_attributes_1:
+        friendly_name: "Global News Headlines Content 1"
+        value_template: >
+          {{ states.sensor.global_news_headlines.attributes.entries[1].title }}
+
+  - platform: template
+    sensors:
+      global_news_toronto_attributes_0:
+        friendly_name: "Global News Toronto Content"
+        value_template: >
+          {{ states.sensor.global_news_toronto.attributes.entries[0].title }}
+
+  - platform: template
+    sensors:
+      global_news_toronto_attributes_1:
+        friendly_name: "Global News Toronto Content 1"
+        value_template: >
+          {{ states.sensor.global_news_toronto.attributes.entries[1].title }}
+
+  - platform: template
+    sensors:
+      global_news_politics_attributes_0:
+        friendly_name: "Global News Politics Content"
+        value_template: >
+          {{ states.sensor.global_news_politics.attributes.entries[0].title }}
+
+  - platform: template
+    sensors:
+      global_news_politics_attributes_1:
+        friendly_name: "Global News Politics Content 1"
+        value_template: >
+          {{ states.sensor.global_news_politics.attributes.entries[1].title }}
+
+  - platform: template
+    sensors:
+      cnn_news_attributes_0:
+        friendly_name: "CNN News Content 0"
+        value_template: >
+          {{ states.sensor.cnn_news.attributes.entries[0].title }}
+
+  - platform: template
+    sensors:
+      cnn_news_attributes_1:
+        friendly_name: "CNN News Content 1"
+        value_template: >
+          {{ states.sensor.cnn_news.attributes.entries[1].title }}
+
+  - platform: template
+    sensors:
+      cnn_news_attributes_2:
+        friendly_name: "CNN News Content 2"
+        value_template: >
+          {{ states.sensor.cnn_news.attributes.entries[2].title }}
+
+  - platform: template
+    sensors:
+      cnn_news_attributes_3:
+        friendly_name: "CNN News Content 3"
+        value_template: >
+          {{ states.sensor.cnn_news.attributes.entries[3].title }}
+
+  - platform: template
+    sensors:
+      cnn_news_attributes_4:
+        friendly_name: "CNN News Content 4"
+        value_template: >
+          {{ states.sensor.cnn_news.attributes.entries[4].title }}
+
+  - platform: template
+    sensors:
+      calories_remaining:
+        value_template: "{{ 1600 - (states('sensor.calories_in_clean') | int - states('sensor.activity_calories') | int) }}"
+        unit_of_measurement: ""
+
+  - platform: template
+    sensors:
+      iphone_8_steps_clean:
+        value_template: "{{ states('sensor.iphone_8_steps') | regex_replace(find=' steps', replace='') }}"
+
+  - platform: template
+    sensors:
+      calories_burned:
+        value_template: "{{ states('sensor.active_energy') | regex_replace(find=' cal', replace='') }}"
+
+  - platform: template
+    sensors:
+      calories_in_clean:
+        value_template: "{{ states('sensor.calories_in') | regex_replace(find=' cal', replace='') }}"
+
+  - platform: template
+    sensors:
+      export_walking_running_distance_clean:
+        value_template: "{{ states('hae.export_walking_running_distance').split(' ')[0] }}"
+
+  - platform: template
+    sensors:
+      activity_calories_clean:
+        value_template: "{{ states('sensor.activity_calories').split(' ')[0] }}"
+
+  - platform: template
+    sensors:
+      export_carbohydrates_clean:
+        value_template: "{{ states('hae.export_carbohydrates') | regex_replace(find=' grams', replace='') }}"
+
+  - platform: template
+    sensors:
+      export_total_fat_clean:
+        value_template: "{{ states('hae.export_total_fat') | regex_replace(find=' grams', replace='') }}"
+
+  - platform: template
+    sensors:
+      steps_remaining:
+        value_template: "{{ 10000 - (states('sensor.iphone_8_steps_clean') | int) }}"
+        unit_of_measurement: ""
+
+  - platform: template
+    sensors:
+      withings_active_calories_burnt_today_clean:
+        value_template: "{{ states('sensor.withings_active_calories_burnt_today').split(' ')[0] }}"
+        friendly_name: "Active Calories Burnt Today"
+
+  - platform: time_date
+    display_options:
+      - "date_time_iso"
+
+  - platform: template
+    sensors:
+      active_chores:
+        value_template: >
+          {% set chores = [
+            states.input_boolean.chore_bathrooms,
+            states.input_boolean.chore_vacuum,
+            states.input_boolean.chore_plants,
+            states.input_boolean.chore_clean_fridge,
+            states.input_boolean.chore_dusting,
+            states.input_boolean.chore_4_thur_vacuum,
+            states.input_boolean.chore_floors,
+            states.input_boolean.chore_8_wkly_brush_cats,
+            states.input_boolean.chore_clean_microwave,
+            states.input_boolean.chore_recycling,
+            states.input_boolean.chore_brushing_dogs,
+            states.input_boolean.chore_garbage,
+            states.input_boolean.chore_bed_linen,
+            states.input_boolean.chore_organics,
+          ] %}
+          {% set active_chores = chores | selectattr('state', 'eq', 'on') | map(attribute='name') | list %}
+          {{ active_chores | join(', ') }}
+
+
+o365:
+  accounts:
+    - account_name: Account1 # Do not use email address or spaces
+      client_id: # INSERT CLIENT ID FOR OFFICE 365 INTEGRATION
+      client_secret: # INSERT CLIENT SECRET FOR OFFICE 365 INTEGRATION
+      alt_auth_method: false
+      enable_calendar: true
+      enable_update: True
+      track_new_calendar: true
+      email_sensor:
+        - name: inbox
+          max_items: 10
+          is_unread: True
+          download_attachments: False
+      query_sensors:
+        - name: "Example"
+          folder: Inbox #Default is Inbox
+          from: #INSERT EMAIL ADDRESS
+          subject_contains: "Example subject"
+          has_attachment: True
+          max_items: 10
+          is_unread: True
+      todo_sensors:
+        enabled: true
+        enable_update: true # set this to true if you want to be able to create new todos
+        track_new: true
+		
+
+  - sensor:
+      - name: "Active Energy"
+        state: >
+          {% set value = states('hae.export_active_energy') %}
+          {% set number = value | regex_findall_index('\d+') %}
+          {{ number | int if number else 0 }}
+
+  - sensor:
+      - name: "Day"
+        state: >
+          {{ as_timestamp(states('sensor.date_time_iso')) | timestamp_custom('%A') }}
+        icon: "mdi:calendar-clock"
+
+  - sensor:
+      - name: "Date"
+        state: >
+          {{ as_timestamp(states('sensor.date_time_iso')) | timestamp_custom('%B %-d, %Y') }}
+        icon: "mdi:calendar-clock"
+
+    binary_sensor:
+      - unique_id: task_due
+        attributes:
+          friendly_name: Task due
+        state: "{{ (states |selectattr('entity_id', 'search', 'input_boolean.health_task_*') |selectattr('state', 'in', 'off')|list)|length > 0 }}"
+
+  - sensor:
+      - name: "Dogs Timer Color"
+        state: >
+          {% if states('timer.dogs') == '0' %}
+            red
+          {% elif states('timer.dogs') < '01:00:00' %}
+            yellow
+          {% else %}
+            rgba(255,255,255,1)
+          {% endif %}
