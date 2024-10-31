@@ -1,6 +1,7 @@
 # Home Dashboard Documentation
 
-**Source**: [Reddit Post by homeassistantme](https://old.reddit.com/r/homeassistant/comments/1ggg31g/yaml_and_blanks_are_ready/)
+- **Disclaimer**: This dashboard is not my personal project, I've only uploaded this for others who might find it useful. All issues should be reported to the original author as I do not intend on maintainting this repo.
+- **Source**: [Reddit Post by homeassistantme](https://old.reddit.com/r/homeassistant/comments/1ggg31g/yaml_and_blanks_are_ready/)
 
 ---
 
@@ -175,7 +176,6 @@ Once all integrations and cards are in place, add the Picture Elements card usin
 
 - **Graphic Editing**: This dashboard requires some graphic editing skills to customize properly.
 - **Developer Appreciation**: If you use portions of this dashboard, consider supporting developers by donating on platforms like GitHub.
-- **Disclaimer**: This dashboard is a personal project, shared for others who might find it useful.
 
 ---
 
