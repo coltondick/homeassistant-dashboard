@@ -177,4 +177,19 @@ Once all integrations and cards are in place, add the Picture Elements card usin
 - **Developer Appreciation**: If you use portions of this dashboard, consider supporting developers by donating on platforms like GitHub.
 - **Disclaimer**: This dashboard is a personal project, shared for others who might find it useful.
 
+---
+
+## Helpful Resources
+
+Below is a list of helpful resources and tools referenced in this project:
+
+- [Card Mod Styling](https://community.home-assistant.io/t/card-mod-add-css-styles-to-any-lovelace-card/120744/1396)
+- [Chore Cart Explanation and Instructions](https://theawesomegarage.com/blog/repeating-household-chores-with-scoring-system-and-awards)
+- [Convert Add Fonts for Home Assistant](https://community.home-assistant.io/t/use-ttf-in-lovelace/143495/33)
+- [Health Auto Export App](https://www.healthyapps.dev/)
+- [Home.By.Me Free 3D Floorplan Creator](https://home.by.me/)
+- [Maxi Media Player](https://community.home-assistant.io/t/maxi-media-player/705007)
+- [Mushroom Card Styling Guide](https://community.home-assistant.io/t/mushroom-cards-card-mod-styling-config-guide/600472)
+- [Smart Home Junkie Tutorial Videos](https://www.youtube.com/@SmartHomeJunkie)
+
 Enjoy!
